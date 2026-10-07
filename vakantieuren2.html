@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vakantie-uren berekenen</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 560px;
+      margin: 40px auto;
+      padding: 24px;
+      color: #243047;
+      background: #f4f7fb;
+    }
+
+    main {
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px #24304718;
+    }
+
+    h1 { margin-top: 0; font-size: 1.5rem; }
+
+    .veld { margin: 18px 0; }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: 600;
+    }
+
+    .tijdinvoer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input, select, button {
+      box-sizing: border-box;
+      padding: 10px;
+      font: inherit;
+      border: 1px solid #cbd3df;
+      border-radius: 6px;
+    }
+
+    input[type="number"] { width: 90px; }
+    select { width: 100%; }
+
+    button {
+      width: 100%;
+      margin-top: 8px;
+      color: white;
+      background: #2463eb;
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:hover { background: #174fc7; }
+
+    #resultaat {
+      margin-top: 20px;
+      padding: 14px;
+      background: #eef4ff;
+      border-radius: 6px;
+      white-space: pre-line;
+      line-height: 1.6;
+    }
+
+    .uitleg {
+      margin: 5px 0 0;
+      color: #657187;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Vakantie-uren berekenen</h1>
+
+    <div class="veld">
+      <label>Vakantie-uren voor een heel jaar</label>
+      <div class="tijdinvoer">
+        <input id="jaarUren" type="number" min="0" placeholder="Uren"
+               aria-label="Jaarlijkse vakantie-uren">
+        <span>uur</span>
+        <input id="jaarMinuten" type="number" min="0" max="59" placeholder="Minuten"
+               aria-label="Jaarlijkse vakantieminuten">
+        <span>minuten</span>
+      </div>
+    </div>
+
+    <div class="veld">
+      <label>Al opgenomen vakantie</label>
+      <div class="tijdinvoer">
+        <input id="opgenomenUren" type="number" min="0" placeholder="Uren"
+               aria-label="Opgenomen vakantie-uren">
+        <span>uur</span>
+        <input id="opgenomenMinuten" type="number" min="0" max="59" placeholder="Minuten"
+               aria-label="Opgenomen vakantieminuten">
+        <span>minuten</span>
+      </div>
+    </div>
+
+    <div class="veld">
+      <label for="eindMaand">Maand waarin het contract stopt</label>
+      <select id="eindMaand">
+        <option value="1">Januari</option>
+        <option value="2">Februari</option>
+        <option value="3">Maart</option>
+        <option value="4">April</option>
+        <option value="5">Mei</option>
+        <option value="6">Juni</option>
+        <option value="7">Juli</option>
+        <option value="8">Augustus</option>
+        <option value="9">September</option>
+        <option value="10">Oktober</option>
+        <option value="11">November</option>
+        <option value="12" selected>December</option>
+      </select>
+    </div>
+
+    <div class="veld">
+      <label for="gewerkteMaanden">Aantal gewerkte maanden (optioneel)</label>
+      <input id="gewerkteMaanden" type="number" min="0" max="12" step="0.01"
+             placeholder="Bijvoorbeeld 5,5">
+      <p class="uitleg">Laat leeg om de contracteindmaand als aantal maanden te gebruiken.</p>
+    </div>
+
+    <button type="button" onclick="bereken()">Bereken</button>
+    <div id="resultaat" aria-live="polite">Vul de gegevens in en klik op Bereken.</div>
+  </main>
+
+  <script>
+    function getal(id) {
+      const waarde = document.getElementById(id).value.trim();
+      return waarde === "" ? 0 : Number(waarde);
+    }
+
+    function formatTijd(minuten) {
+      const teken = minuten < 0 ? "−" : "";
+      const totaal = Math.abs(minuten);
+      const uren = Math.floor(totaal / 60);
+      const restMinuten = totaal % 60;
+      return `${teken}${uren} uur en ${restMinuten} minuten`;
+    }
+
+    function bereken() {
+      const resultaat = document.getElementById("resultaat");
+
+      const jaarUren = getal("jaarUren");
+      const jaarMinuten = getal("jaarMinuten");
+      const opgenomenUren = getal("opgenomenUren");
+      const opgenomenMinuten = getal("opgenomenMinuten");
+      const gewerkteInvoer = document.getElementById("gewerkteMaanden").value.trim();
+
+      if (
+        ![jaarUren, jaarMinuten, opgenomenUren, opgenomenMinuten].every(Number.isFinite) ||
+        jaarUren < 0 || opgenomenUren < 0 ||
+        jaarMinuten < 0 || jaarMinuten > 59 ||
+        opgenomenMinuten < 0 || opgenomenMinuten > 59
+      ) {
+        resultaat.textContent =
+          "Controleer de invoer. Uren mogen niet negatief zijn; minuten moeten tussen 0 en 59 liggen.";
+        return;
+      }
+
+      const maanden = gewerkteInvoer === ""
+        ? Number(document.getElementById("eindMaand").value)
+        : Number(gewerkteInvoer.replace(",", "."));
+
+      if (!Number.isFinite(maanden) || maanden < 0 || maanden > 12) {
+        resultaat.textContent = "Het aantal gewerkte maanden moet tussen 0 en 12 liggen.";
+        return;
+      }
+
+      const jaarTotaalMinuten = jaarUren * 60 + jaarMinuten;
+      const opgenomenTotaalMinuten = opgenomenUren * 60 + opgenomenMinuten;
+      const opgebouwd = Math.round(jaarTotaalMinuten * maanden / 12);
+      const resterend = opgebouwd - opgenomenTotaalMinuten;
+
+      resultaat.textContent =
+        `Opgebouwde vakantie: ${formatTijd(opgebouwd)}\n` +
+        `Opgenomen vakantie: ${formatTijd(opgenomenTotaalMinuten)}\n` +
+        `Resterende vakantie: ${formatTijd(resterend)}`;
+    }
+  </script>
+</body>
+</html>
+
